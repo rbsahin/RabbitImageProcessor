@@ -66,4 +66,21 @@ public class UploadController : ControllerBase
 
         channel.BasicPublish(exchange: "", routingKey: "image_tasks", basicProperties: null, body: body);
     }
+
+    [HttpGet("processed/{fileName}")]
+    public IActionResult GetProcessedImage(string fileName)
+    {
+        var processedPath = Path.Combine(_env.ContentRootPath, "processed", fileName);
+
+        if (!System.IO.File.Exists(processedPath))
+        {
+            return NotFound("Ýþlenmiþ görsel bulunamadý.");
+        }
+
+        var contentType = "image/" + Path.GetExtension(fileName).TrimStart('.');
+        var fileBytes = System.IO.File.ReadAllBytes(processedPath);
+
+        return File(fileBytes, contentType, fileName);
+    }
+
 }
