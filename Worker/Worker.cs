@@ -14,16 +14,18 @@ public class ImageWorker : BackgroundService
     private readonly ILogger<ImageWorker> _logger;
     private IConnection? _connection;
     private IModel? _channel;
+    private readonly IConfiguration _config;
 
-    public ImageWorker(ILogger<ImageWorker> logger)
+    public ImageWorker(ILogger<ImageWorker> logger, IConfiguration config)
     {
         _logger = logger;
+        _config = config;
         InitRabbitMQ();
     }
 
     private void InitRabbitMQ()
     {
-        var factory = new ConnectionFactory() { HostName = "localhost" };
+        var factory = new ConnectionFactory() { HostName = _config["RabbitMQ:HostName"] ?? "localhost" };
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
 
