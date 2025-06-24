@@ -25,12 +25,30 @@ public class ImageWorker : BackgroundService
 
     private void InitRabbitMQ()
     {
+        var retryCount = 5;
         var factory = new ConnectionFactory() { HostName = _config["RabbitMQ:HostName"] ?? "localhost" };
-        _connection = factory.CreateConnection();
-        _channel = _connection.CreateModel();
 
-        _channel.QueueDeclare(queue: "image_tasks", durable: true, exclusive: false, autoDelete: false, arguments: null);
+        for (int i = 0; i < retryCount; i++)
+        {
+            try
+            {
+                _connection = factory.CreateConnection();
+                _channel = _connection.CreateModel();
+                _channel.QueueDeclare(queue: "image_tasks", durable: true, exclusive: false, autoDelete: false, arguments: null);
+
+                _logger.LogInformation("RabbitMQ baðlantýsý kuruldu.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"RabbitMQ baðlantý hatasý (deneme {i + 1}/{retryCount})");
+                Thread.Sleep(5000); // 5 saniye bekle
+            }
+        }
+
+        throw new Exception("RabbitMQ baðlantýsý kurulamadý. Maksimum deneme hakký aþýldý.");
     }
+
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -59,11 +77,14 @@ public class ImageWorker : BackgroundService
     private async Task ProcessImageAsync(ImageTaskMessage msg)
     {
         var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-        var processedDir = Path.Combine(Directory.GetCurrentDirectory(), "processed");
+        var processedDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "processed");
+
+
         Directory.CreateDirectory(processedDir);
 
-        var sourcePath = Path.Combine(uploadsDir, msg.FileName);
+        var sourcePath = Path.Combine(uploadsDir, msg.FileName); 
         var targetPath = Path.Combine(processedDir, msg.FileName);
+
 
         if (!File.Exists(sourcePath))
         {

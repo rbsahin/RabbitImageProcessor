@@ -70,7 +70,7 @@ public class UploadController : ControllerBase
     [HttpGet("processed/{fileName}")]
     public IActionResult GetProcessedImage(string fileName)
     {
-        var processedPath = Path.Combine(_env.ContentRootPath, "processed", fileName);
+        var processedPath = Path.Combine(_env.ContentRootPath, "uploads", "processed", fileName);
 
         if (!System.IO.File.Exists(processedPath))
         {
@@ -82,5 +82,6 @@ public class UploadController : ControllerBase
 
         return File(fileBytes, contentType, fileName);
     }
+
 
 }
